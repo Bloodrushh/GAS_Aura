@@ -3,6 +3,7 @@
 #include "Player/AuraPlayerController.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
+#include "Interaction/EnemyInterface.h"
 
 AAuraPlayerController::AAuraPlayerController()
 {
@@ -28,6 +29,13 @@ void AAuraPlayerController::BeginPlay()
 	SetInputMode(inputModeData);
 }
 
+void AAuraPlayerController::PlayerTick(float DeltaTime)
+{
+	Super::PlayerTick(DeltaTime);
+
+	CursorTrace();
+}
+
 void AAuraPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
@@ -50,5 +58,65 @@ void AAuraPlayerController::Move(const FInputActionValue& InputActionValue)
 	{
 		controlledPAwn->AddMovementInput(forwardDirection, inputAxisVector.Y);
 		controlledPAwn->AddMovementInput(rightDirection, inputAxisVector.X);
+	}
+}
+
+void AAuraPlayerController::CursorTrace()
+{
+	FHitResult cursorHit;
+	GetHitResultUnderCursor(ECC_Visibility, false, cursorHit);
+	if(!cursorHit.bBlockingHit)
+	{
+		return;
+	}
+
+	LastActor = CurrentActor;
+	CurrentActor = 	Cast<IEnemyInterface>(cursorHit.GetActor());
+	/**
+	 * Line trace from cursor. There are several scenarios.
+	 * A. LastActor is null && CurrentActor is null
+	 *		- do nothing
+	 *	B. LastActor is null && CurrentActor is valid
+	 *		- Hightlight CurrentActor
+	 *	C. LastActor is valid && CurrentActor is null
+	 *		- UnHighligh LastActor
+	 *	D. Both actors are valid, but LastActor != CurrentActor
+	 *		- Unhighlight LastActor and Hightlight CurrentActor
+	 *	E. Both actors are valid and are te same actor
+	 *		- do nothing
+	 */
+
+	if(LastActor == nullptr)
+	{
+		if(CurrentActor != nullptr)
+		{
+			//Case B
+			CurrentActor->HighlightActor();
+		}
+		else
+		{
+			// Case A. both are null, do nothing
+		}
+	}
+	else // LastActor is valid
+	{
+		if(CurrentActor == nullptr)
+		{
+			// Case C.
+			LastActor->UnHighlightActor();
+		}
+		else // both are valid
+		{
+			if(LastActor != CurrentActor)
+			{
+				// Case D.
+				LastActor->UnHighlightActor();
+				CurrentActor->HighlightActor();
+			}
+			else
+			{
+				//Case E - do nothing
+			}
+		}
 	}
 }
