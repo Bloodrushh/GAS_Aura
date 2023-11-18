@@ -11,11 +11,12 @@ UCLASS()
 class AURA_API AAuraEnemyCharacter : public AAuraCharacterBase, public  IEnemyInterface
 {
 public:
+	GENERATED_BODY()
 	AAuraEnemyCharacter();
 	
 	virtual void HighlightActor() override;
 	virtual void UnHighlightActor() override;
 
-private:
-	GENERATED_BODY()
+protected:
+	virtual void BeginPlay() override;
 };
