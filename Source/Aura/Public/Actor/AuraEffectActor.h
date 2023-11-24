@@ -12,7 +12,7 @@ UENUM(BlueprintType)
 enum class EEffectApplicationPolicy
 {
 	ApplyOnOverlap,
-	ApplyEndOverlap,
+	ApplyOnEndOverlap,
 	DoNotApply
 };
 
