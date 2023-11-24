@@ -28,7 +28,12 @@ void AAuraEffectActor::ApplyEffectToTarget(AActor* TargetActor, TSubclassOf<UGam
 		FGameplayEffectContextHandle effectContextHandle = targetASC->MakeEffectContext();
 		effectContextHandle.AddSourceObject(this);
 		const FGameplayEffectSpecHandle effectSpecHandle = targetASC->MakeOutgoingSpec(GameplayEffectClass, 1.0f, effectContextHandle);
-		targetASC->ApplyGameplayEffectSpecToSelf(*effectSpecHandle.Data.Get());
+		const FActiveGameplayEffectHandle activeGameplayEffectHandle = targetASC->ApplyGameplayEffectSpecToSelf(*effectSpecHandle.Data.Get());
+
+		if(effectSpecHandle.Data.Get()->Def->DurationPolicy == EGameplayEffectDurationType::Infinite && InfiniteGameplayEffectRemovalPolicy == EEffectRemovalPolicy::RemoveEndOverlap)
+		{
+			ActiveInfiniteEffectHandles.Add(activeGameplayEffectHandle, targetASC);
+		}
 	}
 }
 
@@ -43,6 +48,11 @@ void AAuraEffectActor::OnOverlap(AActor* TargetActor)
 	{
 		ApplyEffectToTarget(TargetActor, DurationGameplayEffectClass);
 	}
+
+	if(InfiniteGameplayEffectApplicationPolicy == EEffectApplicationPolicy::ApplyOnOverlap)
+	{
+		ApplyEffectToTarget(TargetActor, InfiniteGameplayEffectClass);
+	}
 }
 
 void AAuraEffectActor::OnEndOverlap(AActor* TargetActor)
@@ -55,5 +65,30 @@ void AAuraEffectActor::OnEndOverlap(AActor* TargetActor)
 	if(DurationGameplayEffectApplicationPolicy == EEffectApplicationPolicy::ApplyOnEndOverlap)
 	{
 		ApplyEffectToTarget(TargetActor, DurationGameplayEffectClass);
+	}
+
+	if(InfiniteGameplayEffectRemovalPolicy == EEffectRemovalPolicy::RemoveEndOverlap)
+	{
+		UAbilitySystemComponent* targetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
+		if(!IsValid(targetASC))
+		{
+			return;
+		}
+
+		TArray<FActiveGameplayEffectHandle> handlesToRemove;
+
+		for(auto handlePair : ActiveInfiniteEffectHandles)
+		{
+			if(handlePair.Value == targetASC)
+			{
+				targetASC->RemoveActiveGameplayEffect(handlePair.Key, 1);
+				handlesToRemove.Add(handlePair.Key);
+			}
+		}
+
+		for(auto& handle : handlesToRemove)
+		{
+			ActiveInfiniteEffectHandles.FindAndRemoveChecked(handle);
+		}
 	}
 }
