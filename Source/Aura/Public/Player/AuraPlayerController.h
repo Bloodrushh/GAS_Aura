@@ -36,7 +36,7 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	TObjectPtr<UInputAction> MoveAction;
 
-	TObjectPtr<IEnemyInterface> LastActor;
+	IEnemyInterface* LastActor;
 
-	TObjectPtr<IEnemyInterface> CurrentActor;
+	IEnemyInterface* CurrentActor;
 };
